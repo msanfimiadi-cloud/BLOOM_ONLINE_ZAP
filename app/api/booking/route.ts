@@ -1,87 +1,90 @@
-import { getChatGPTUser } from "@/app/chatgpt-auth";
-import { asMinutes, database, formatTime, id, now, seedDemoData } from "@/lib/booking";
+import {currentAccess,canAccessOrganization} from "@/lib/access";
+import {asMinutes,database,formatTime,id,now,seedDemoData} from "@/lib/booking";
+import {notifyPartner,telegramConfigured} from "@/lib/telegram";
 
-type Dict = Record<string, any>;
+type Dict=Record<string,any>;
+const publicOrganizationFields="o.id,o.slug,o.name,o.city,o.address,o.category,o.description,o.phone,o.color,o.bloom_discount_percent,o.timezone";
+function fail(message:string,status=400){return Response.json({error:message},{status})}
 
-function fail(message: string, status = 400) { return Response.json({error: message}, {status}); }
-
-export async function GET(request: Request) {
-  try {
-    await seedDemoData();
-    const db = database(), url = new URL(request.url), kind = url.searchParams.get("kind") ?? "organizations";
-    if (kind === "organizations") {
-      const {results} = await db.prepare("SELECT o.*, (SELECT COUNT(*) FROM staff s WHERE s.organization_id=o.id AND s.active=1) AS staff_count, (SELECT MIN(price) FROM services v WHERE v.organization_id=o.id AND v.active=1) AS min_price FROM organizations o WHERE o.active=1 ORDER BY o.created_at, o.name").all();
-      return Response.json({organizations:results});
-    }
-    if (kind === "organization") {
-      const slug = url.searchParams.get("slug");
-      if (!slug) return fail("Не указан партнёр.");
-      const organization = await db.prepare("SELECT * FROM organizations WHERE slug=? AND active=1").bind(slug).first<Dict>();
-      if (!organization) return fail("Партнёр не найден.",404);
-      const members = await db.prepare("SELECT * FROM staff WHERE organization_id=? AND active=1 ORDER BY name").bind(organization.id).all();
-      const offerings = await db.prepare("SELECT * FROM services WHERE organization_id=? AND active=1 ORDER BY price").bind(organization.id).all();
-      return Response.json({organization, staff:members.results, services:offerings.results});
-    }
-    if (kind === "slots") {
-      const staffId=url.searchParams.get("staffId"), serviceId=url.searchParams.get("serviceId"), date=url.searchParams.get("date");
-      if (!staffId || !serviceId || !date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return fail("Выберите мастера, услугу и дату.");
-      const member=await db.prepare("SELECT * FROM staff WHERE id=? AND active=1").bind(staffId).first<Dict>();
-      const service=await db.prepare("SELECT * FROM services WHERE id=? AND active=1").bind(serviceId).first<Dict>();
-      if (!member || !service || member.organization_id !== service.organization_id) return fail("Мастер или услуга недоступны.",404);
-      const booked=await db.prepare("SELECT appointment_time,duration FROM appointments WHERE staff_id=? AND appointment_date=? AND status!='cancelled'").bind(staffId,date).all<Dict>();
-      const slots:string[]=[];
-      for(let minute=asMinutes(member.work_start);minute+Number(service.duration)<=asMinutes(member.work_end);minute+=30){
-        if (!booked.results.some((item)=>minute<asMinutes(item.appointment_time)+Number(item.duration)&&minute+Number(service.duration)>asMinutes(item.appointment_time))) slots.push(formatTime(minute));
-      }
-      return Response.json({slots});
-    }
-    if (kind === "dashboard") {
-      const user=await getChatGPTUser(); if(!user)return fail("Необходим вход в кабинет.",401);
-      const organizationId=url.searchParams.get("organizationId");
-      const orgs=await db.prepare("SELECT * FROM organizations ORDER BY created_at").all<Dict>();
-      const filter=organizationId ? " WHERE a.organization_id=?" : "";
-      let query=db.prepare(`SELECT a.*,o.name AS organization_name,s.name AS staff_name,v.name AS service_name FROM appointments a JOIN organizations o ON o.id=a.organization_id JOIN staff s ON s.id=a.staff_id JOIN services v ON v.id=a.service_id${filter} ORDER BY a.appointment_date DESC,a.appointment_time DESC LIMIT 200`);
-      if(organizationId)query=query.bind(organizationId);
-      const bookings=await query.all<Dict>();
-      const staff=organizationId?await db.prepare("SELECT * FROM staff WHERE organization_id=? ORDER BY name").bind(organizationId).all<Dict>():await db.prepare("SELECT * FROM staff ORDER BY name").all<Dict>();
-      const services=organizationId?await db.prepare("SELECT * FROM services WHERE organization_id=? ORDER BY name").bind(organizationId).all<Dict>():await db.prepare("SELECT * FROM services ORDER BY name").all<Dict>();
-      return Response.json({organizations:orgs.results,appointments:bookings.results,staff:staff.results,services:services.results,user:{name:user.displayName,email:user.email}});
-    }
-    return fail("Неизвестный запрос.",404);
-  } catch(error) { return fail(error instanceof Error?error.message:"Ошибка сервера.",500); }
+export async function GET(request:Request){
+ try{
+  await seedDemoData();const db=database(),url=new URL(request.url),kind=url.searchParams.get("kind")??"organizations";
+  if(kind==="organizations"){
+   const {results}=await db.prepare(`SELECT ${publicOrganizationFields},(SELECT COUNT(*) FROM staff s WHERE s.organization_id=o.id AND s.active=1) AS staff_count,(SELECT MIN(price) FROM services v WHERE v.organization_id=o.id AND v.active=1) AS min_price FROM organizations o WHERE o.active=1 ORDER BY o.created_at,o.name`).all();
+   return Response.json({organizations:results});
+  }
+  if(kind==="organization"){
+   const slug=url.searchParams.get("slug");if(!slug)return fail("Не указан партнёр.");
+   const organization=await db.prepare(`SELECT ${publicOrganizationFields} FROM organizations o WHERE o.slug=? AND o.active=1`).bind(slug).first<Dict>();if(!organization)return fail("Партнёр не найден.",404);
+   const members=await db.prepare("SELECT id,organization_id,name,role,work_start,work_end FROM staff WHERE organization_id=? AND active=1 ORDER BY name").bind(organization.id).all();
+   const offerings=await db.prepare("SELECT id,organization_id,name,price,duration FROM services WHERE organization_id=? AND active=1 ORDER BY price").bind(organization.id).all();
+   return Response.json({organization,staff:members.results,services:offerings.results});
+  }
+  if(kind==="slots"){
+   const staffId=url.searchParams.get("staffId"),serviceId=url.searchParams.get("serviceId"),date=url.searchParams.get("date");if(!staffId||!serviceId||!date||!/^\d{4}-\d{2}-\d{2}$/.test(date))return fail("Выберите мастера, услугу и дату.");
+   const member=await db.prepare("SELECT * FROM staff WHERE id=? AND active=1").bind(staffId).first<Dict>(),service=await db.prepare("SELECT * FROM services WHERE id=? AND active=1").bind(serviceId).first<Dict>();if(!member||!service||member.organization_id!==service.organization_id)return fail("Мастер или услуга недоступны.",404);
+   const booked=await db.prepare("SELECT appointment_time,duration FROM appointments WHERE staff_id=? AND appointment_date=? AND status!='cancelled'").bind(staffId,date).all<Dict>(),slots:string[]=[];
+   for(let minute=asMinutes(member.work_start);minute+Number(service.duration)<=asMinutes(member.work_end);minute+=30)if(!booked.results.some(item=>minute<asMinutes(item.appointment_time)+Number(item.duration)&&minute+Number(service.duration)>asMinutes(item.appointment_time)))slots.push(formatTime(minute));
+   return Response.json({slots});
+  }
+  if(kind==="dashboard"){
+   const access=await currentAccess();if(!access)return fail("Доступ в кабинет не предоставлен. Обратитесь к владельцу сервиса.",403);
+   const requested=url.searchParams.get("organizationId");if(requested&&!canAccessOrganization(access,requested))return fail("У вас нет доступа к этому партнёру.",403);
+   const organizationId=access.role==="partner"?access.organizationId:requested;
+   if(access.role==="partner"&&!organizationId)return fail("Ваш аккаунт не привязан к партнёру.",403);
+   const orgs=organizationId?await db.prepare("SELECT * FROM organizations WHERE id=? ORDER BY created_at").bind(organizationId).all<Dict>():await db.prepare("SELECT * FROM organizations ORDER BY created_at").all<Dict>();
+   const filter=organizationId?" WHERE a.organization_id=?":"";let query=db.prepare(`SELECT a.*,o.name AS organization_name,s.name AS staff_name,v.name AS service_name FROM appointments a JOIN organizations o ON o.id=a.organization_id JOIN staff s ON s.id=a.staff_id JOIN services v ON v.id=a.service_id${filter} ORDER BY a.appointment_date DESC,a.appointment_time DESC LIMIT 200`);if(organizationId)query=query.bind(organizationId);
+   const bookings=await query.all<Dict>(),members=organizationId?await db.prepare("SELECT * FROM staff WHERE organization_id=? ORDER BY name").bind(organizationId).all<Dict>():await db.prepare("SELECT * FROM staff ORDER BY name").all<Dict>(),offerings=organizationId?await db.prepare("SELECT * FROM services WHERE organization_id=? ORDER BY name").bind(organizationId).all<Dict>():await db.prepare("SELECT * FROM services ORDER BY name").all<Dict>();
+   const users=access.role==="owner"?await db.prepare("SELECT a.*,o.name AS organization_name FROM account_access a LEFT JOIN organizations o ON o.id=a.organization_id ORDER BY a.role DESC,a.created_at").all<Dict>():{results:[]};
+   const notifications=organizationId?await db.prepare("SELECT n.*,o.name AS organization_name FROM notification_events n JOIN organizations o ON o.id=n.organization_id WHERE n.organization_id=? ORDER BY n.created_at DESC LIMIT 30").bind(organizationId).all<Dict>():access.role==="owner"?await db.prepare("SELECT n.*,o.name AS organization_name FROM notification_events n JOIN organizations o ON o.id=n.organization_id ORDER BY n.created_at DESC LIMIT 30").all<Dict>():{results:[]};
+   return Response.json({organizations:orgs.results,appointments:bookings.results,staff:members.results,services:offerings.results,accounts:users.results,notifications:notifications.results,telegramConfigured:telegramConfigured(),user:{name:access.name,email:access.email,role:access.role,organizationId:access.organizationId}});
+  }
+  return fail("Неизвестный запрос.",404);
+ }catch(error){return fail(error instanceof Error?error.message:"Ошибка сервера.",500)}
 }
 
 export async function POST(request:Request){
  try{
   await seedDemoData();const db=database(),payload=await request.json() as Dict,action=String(payload.action??"book");
   if(action==="book"){
-    const name=String(payload.customerName??"").trim(),phone=String(payload.customerPhone??"").trim(),date=String(payload.date??""),time=String(payload.time??"");
-    if(name.length<2||phone.replace(/\D/g,"").length<10||!/^\d{4}-\d{2}-\d{2}$/.test(date)||!/^\d{2}:\d{2}$/.test(time))return fail("Проверьте имя, номер телефона, дату и время.");
-    const member=await db.prepare("SELECT * FROM staff WHERE id=? AND active=1").bind(String(payload.staffId??"")).first<Dict>();
-    const service=await db.prepare("SELECT * FROM services WHERE id=? AND active=1").bind(String(payload.serviceId??"")).first<Dict>();
-    if(!member||!service||member.organization_id!==service.organization_id)return fail("Выбранные мастер и услуга несовместимы.");
-    const start=asMinutes(time),end=start+Number(service.duration);if(start<asMinutes(member.work_start)||end>asMinutes(member.work_end))return fail("Время находится вне графика мастера.");
-    const bookingId=id("apt"),created=now();
-    const result=await db.prepare("INSERT INTO appointments (id, organization_id, staff_id, service_id, customer_name, customer_phone, appointment_date, appointment_time, duration, price, status, source, notes, created_at) SELECT ?,?,?,?,?,?,?,?,?,?,'confirmed',?,?,? WHERE NOT EXISTS (SELECT 1 FROM appointments WHERE staff_id=? AND appointment_date=? AND status!='cancelled' AND (CAST(substr(appointment_time,1,2) AS INTEGER)*60+CAST(substr(appointment_time,4,2) AS INTEGER))<? AND (CAST(substr(appointment_time,1,2) AS INTEGER)*60+CAST(substr(appointment_time,4,2) AS INTEGER)+duration)>?)").bind(bookingId,member.organization_id,member.id,service.id,name,phone,date,time,service.duration,service.price,String(payload.source??"bloom"),String(payload.notes??""),created,member.id,date,end,start).run();
-    if(!result.meta?.changes)return fail("Это время только что заняли. Выберите другой интервал.",409);
-    return Response.json({success:true,id:bookingId},{status:201});
+   const name=String(payload.customerName??"").trim(),phone=String(payload.customerPhone??"").trim(),date=String(payload.date??""),time=String(payload.time??"");if(name.length<2||phone.replace(/\D/g,"").length<10||!/^\d{4}-\d{2}-\d{2}$/.test(date)||!/^\d{2}:\d{2}$/.test(time))return fail("Проверьте имя, номер телефона, дату и время.");
+   const member=await db.prepare("SELECT * FROM staff WHERE id=? AND active=1").bind(String(payload.staffId??"")).first<Dict>(),service=await db.prepare("SELECT * FROM services WHERE id=? AND active=1").bind(String(payload.serviceId??"")).first<Dict>();if(!member||!service||member.organization_id!==service.organization_id)return fail("Выбранные мастер и услуга несовместимы.");
+   const start=asMinutes(time),end=start+Number(service.duration);if(start<asMinutes(member.work_start)||end>asMinutes(member.work_end))return fail("Время находится вне графика мастера.");
+   const source=String(payload.source??"direct").slice(0,50)==="bloom-club"?"bloom-club":"direct",bookingId=id("apt"),created=now();
+   const result=await db.prepare("INSERT INTO appointments (id, organization_id, staff_id, service_id, customer_name, customer_phone, appointment_date, appointment_time, duration, price, status, source, notes, created_at) SELECT ?,?,?,?,?,?,?,?,?,?,'confirmed',?,?,? WHERE NOT EXISTS (SELECT 1 FROM appointments WHERE staff_id=? AND appointment_date=? AND status!='cancelled' AND (CAST(substr(appointment_time,1,2) AS INTEGER)*60+CAST(substr(appointment_time,4,2) AS INTEGER))<? AND (CAST(substr(appointment_time,1,2) AS INTEGER)*60+CAST(substr(appointment_time,4,2) AS INTEGER)+duration)>?)").bind(bookingId,member.organization_id,member.id,service.id,name,phone,date,time,service.duration,service.price,source,String(payload.notes??"").slice(0,1000),created,member.id,date,end,start).run();if(!result.meta?.changes)return fail("Это время только что заняли. Выберите другой интервал.",409);
+   try{await notifyPartner(member.organization_id,bookingId,"new_booking")}catch{}
+   return Response.json({success:true,id:bookingId},{status:201});
   }
-  const user=await getChatGPTUser();if(!user)return fail("Необходим вход в кабинет.",401);
+  const access=await currentAccess();if(!access)return fail("Доступ в кабинет не предоставлен.",403);
   if(action==="update-status"){
-    if(!["confirmed","completed","cancelled","no_show"].includes(String(payload.status)))return fail("Недопустимый статус.");
-    await db.prepare("UPDATE appointments SET status=? WHERE id=?").bind(payload.status,String(payload.id??"")).run();return Response.json({success:true});
+   if(!["confirmed","completed","cancelled","no_show"].includes(String(payload.status)))return fail("Недопустимый статус.");const booking=await db.prepare("SELECT id,organization_id FROM appointments WHERE id=?").bind(String(payload.id??"")).first<Dict>();if(!booking)return fail("Запись не найдена.",404);if(!canAccessOrganization(access,booking.organization_id))return fail("Вы не можете изменять записи другого партнёра.",403);
+   await db.prepare("UPDATE appointments SET status=? WHERE id=? AND organization_id=?").bind(payload.status,booking.id,booking.organization_id).run();try{await notifyPartner(booking.organization_id,booking.id,payload.status==="cancelled"?"cancelled":"status_changed")}catch{}return Response.json({success:true});
   }
   if(action==="add-organization"){
-    const name=String(payload.name??"").trim(),slug=String(payload.slug??"").trim().toLowerCase();if(name.length<2||!/^[-a-z0-9]{3,50}$/.test(slug))return fail("Укажите название и адрес страницы латиницей.");
-    await db.prepare("INSERT INTO organizations (id,slug,name,city,address,category,description,phone,color,active,created_at) VALUES (?,?,?,?,?,?,?,?,?,1,?)").bind(id("org"),slug,name,String(payload.city??"Новосибирск"),String(payload.address??""),String(payload.category??"Красота и уход"),String(payload.description??""),String(payload.phone??""),"#f6e7e2",now()).run();return Response.json({success:true},{status:201});
+   if(access.role!=="owner")return fail("Только владелец может добавлять партнёров.",403);const name=String(payload.name??"").trim(),slug=String(payload.slug??"").trim().toLowerCase();if(name.length<2||!/^[-a-z0-9]{3,50}$/.test(slug))return fail("Укажите название и адрес страницы латиницей.");
+   await db.prepare("INSERT INTO organizations (id,slug,name,city,address,category,description,phone,color,active,created_at) VALUES (?,?,?,?,?,?,?,?,?,1,?)").bind(id("org"),slug,name,String(payload.city??"Новосибирск"),String(payload.address??""),String(payload.category??"Красота и уход"),String(payload.description??""),String(payload.phone??""),"#f6e7e2",now()).run();return Response.json({success:true},{status:201});
   }
   if(action==="add-staff"){
-    const name=String(payload.name??"").trim();if(name.length<2||!payload.organizationId)return fail("Укажите партнёра и имя специалиста.");
-    await db.prepare("INSERT INTO staff (id,organization_id,name,role,active,work_start,work_end,created_at) VALUES (?,?,?,?,1,?,?,?)").bind(id("st"),String(payload.organizationId),name,String(payload.role??"Специалист"),String(payload.workStart??"10:00"),String(payload.workEnd??"19:00"),now()).run();return Response.json({success:true},{status:201});
+   const name=String(payload.name??"").trim(),organizationId=String(payload.organizationId??"");if(name.length<2||!organizationId)return fail("Укажите партнёра и имя специалиста.");if(!canAccessOrganization(access,organizationId))return fail("Вы не можете добавлять специалистов другому партнёру.",403);const workStart=String(payload.workStart??"10:00"),workEnd=String(payload.workEnd??"19:00");if(!/^\d{2}:\d{2}$/.test(workStart)||!/^\d{2}:\d{2}$/.test(workEnd)||asMinutes(workStart)>=asMinutes(workEnd))return fail("Проверьте рабочее расписание специалиста.");
+   await db.prepare("INSERT INTO staff (id,organization_id,name,role,active,work_start,work_end,created_at) VALUES (?,?,?,?,1,?,?,?)").bind(id("st"),organizationId,name,String(payload.role??"Специалист"),workStart,workEnd,now()).run();return Response.json({success:true},{status:201});
   }
   if(action==="add-service"){
-    const name=String(payload.name??"").trim(),price=Number(payload.price),duration=Number(payload.duration);if(name.length<2||!payload.organizationId||!Number.isInteger(price)||price<0||!Number.isInteger(duration)||duration<15)return fail("Проверьте название, стоимость и длительность услуги.");
-    await db.prepare("INSERT INTO services (id,organization_id,name,price,duration,active,created_at) VALUES (?,?,?,?,?,1,?)").bind(id("sv"),String(payload.organizationId),name,price,duration,now()).run();return Response.json({success:true},{status:201});
+   const name=String(payload.name??"").trim(),organizationId=String(payload.organizationId??""),price=Number(payload.price),duration=Number(payload.duration);if(name.length<2||!organizationId||!Number.isInteger(price)||price<0||!Number.isInteger(duration)||duration<15)return fail("Проверьте название, стоимость и длительность услуги.");if(!canAccessOrganization(access,organizationId))return fail("Вы не можете добавлять услуги другому партнёру.",403);
+   await db.prepare("INSERT INTO services (id,organization_id,name,price,duration,active,created_at) VALUES (?,?,?,?,?,1,?)").bind(id("sv"),organizationId,name,price,duration,now()).run();return Response.json({success:true},{status:201});
+  }
+  if(action==="add-account"){
+   if(access.role!=="owner")return fail("Только владелец управляет доступами.",403);const email=String(payload.email??"").trim().toLowerCase(),organizationId=String(payload.organizationId??"");if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||!organizationId)return fail("Укажите корректный email и партнёра.");const organization=await db.prepare("SELECT id FROM organizations WHERE id=?").bind(organizationId).first();if(!organization)return fail("Партнёр не найден.",404);
+   await db.prepare("INSERT INTO account_access (id,email,display_name,role,organization_id,active,created_at) VALUES (?,?,?,'partner',?,1,?)").bind(id("acc"),email,String(payload.displayName??""),organizationId,now()).run();return Response.json({success:true},{status:201});
+  }
+  if(action==="update-account"){
+   if(access.role!=="owner")return fail("Только владелец управляет доступами.",403);const record=await db.prepare("SELECT id,role FROM account_access WHERE id=?").bind(String(payload.id??"")).first<Dict>();if(!record)return fail("Пользователь не найден.",404);if(record.role==="owner")return fail("Нельзя отключить владельца.");await db.prepare("UPDATE account_access SET active=? WHERE id=? AND role='partner'").bind(payload.active?1:0,record.id).run();return Response.json({success:true});
+  }
+  if(action==="update-organization"){
+   const organizationId=String(payload.organizationId??"");if(!organizationId||!canAccessOrganization(access,organizationId))return fail("У вас нет доступа к настройкам этого партнёра.",403);const chatId=String(payload.telegramChatId??"").trim(),discount=Number(payload.bloomDiscountPercent??0),timezone=String(payload.timezone??"Asia/Novosibirsk");if(chatId&&!/^-?\d{5,20}$/.test(chatId))return fail("Telegram chat ID должен содержать только цифры.");if(!Number.isInteger(discount)||discount<0||discount>90)return fail("Скидка должна быть от 0 до 90%.");if(!["Asia/Novosibirsk","Europe/Moscow","Asia/Yekaterinburg"].includes(timezone))return fail("Выберите часовой пояс из списка.");
+   await db.prepare("UPDATE organizations SET telegram_chat_id=?,notifications_enabled=?,bloom_discount_percent=?,timezone=? WHERE id=?").bind(chatId,payload.notificationsEnabled?1:0,discount,timezone,organizationId).run();return Response.json({success:true});
+  }
+  if(action==="test-telegram"){
+   const organizationId=String(payload.organizationId??"");if(!canAccessOrganization(access,organizationId))return fail("У вас нет доступа к настройкам этого партнёра.",403);const result=await notifyPartner(organizationId,null,"test","🌸 <b>Bloom Online</b>\n\nТестовое уведомление: Telegram успешно подключён.");if(!result.sent)return fail(result.reason);return Response.json({success:true});
   }
   return fail("Неизвестное действие.");
  }catch(error){const message=error instanceof Error?error.message:"Ошибка сервера.";return fail(message.includes("UNIQUE")?"Такая запись уже существует.":message,message.includes("UNIQUE")?409:500)}

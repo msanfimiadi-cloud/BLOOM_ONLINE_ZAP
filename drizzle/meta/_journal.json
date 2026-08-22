@@ -8,6 +8,13 @@
       "when": 1787403913550,
       "tag": "0000_wet_thor",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1787404530985,
+      "tag": "0001_optimal_silverclaw",
+      "breakpoints": true
     }
   ]
 }
