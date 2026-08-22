@@ -1,0 +1,17 @@
+{
+  "name": "Bloom Online — запись к специалистам",
+  "short_name": "Bloom Online",
+  "description": "Онлайн-запись к проверенным специалистам красоты и заботы о себе от Bloom Club.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fbfaf7",
+  "theme_color": "#f8e8e6",
+  "icons": [
+    {
+      "src": "/bloom-online-icon.png",
+      "sizes": "1254x1254",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

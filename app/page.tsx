@@ -1,4 +1,5 @@
 import Link from "next/link";
+import BrandLogo from "@/app/components/brand-logo";
 import PartnerCatalog from "./components/partner-catalog";
 
 const services = [
@@ -12,7 +13,7 @@ export default function Home() {
   return (
     <main className="site-shell">
       <header className="topbar">
-        <Link href="/" className="brand"><span className="brand-mark">✿</span> bloom<span>online</span></Link>
+        <BrandLogo />
         <nav className="topnav"><a href="#catalog">Услуги</a><a href="#partners">Партнёры</a><Link href="/dashboard" className="button button-dark">Кабинет партнёра</Link></nav>
       </header>
       <section className="intro">
@@ -27,7 +28,7 @@ export default function Home() {
         <div className="category-grid">{services.map((item) => <article className="category-card" style={{backgroundColor: item.color}} key={item.name}><span className="category-icon">{item.icon}</span><h3>{item.name}</h3><span>{item.count}</span><span className="category-arrow">↗</span></article>)}</div>
       </section>
       <section className="section partner-section" id="partners"><div className="section-heading"><div><div className="eyebrow">ТЩАТЕЛЬНО ОТОБРАНЫ</div><h2>Наши партнёры</h2></div><span className="muted">Новосибирск · Москва · Екатеринбург</span></div><PartnerCatalog/></section>
-      <footer className="footer"><Link href="/" className="brand"><span className="brand-mark">✿</span> bloom<span>online</span></Link><span>Ваше время. Ваши правила.</span><Link href="/dashboard">Для партнёров →</Link></footer>
+      <footer className="footer"><BrandLogo /><span>Ваше время. Ваши правила.</span><Link href="/dashboard">Для партнёров →</Link></footer>
     </main>
   );
 }
