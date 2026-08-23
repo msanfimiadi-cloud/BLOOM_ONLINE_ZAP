@@ -1,0 +1,10 @@
+[Unit]
+Description=Backup Bloom Online SQLite database
+
+[Service]
+Type=oneshot
+User=bloom-online
+Group=bloom-online
+WorkingDirectory=/opt/bloom-online
+EnvironmentFile=/etc/bloom-online.env
+ExecStart=/usr/bin/npm run db:backup

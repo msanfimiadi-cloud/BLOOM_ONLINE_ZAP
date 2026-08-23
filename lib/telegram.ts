@@ -1,8 +1,7 @@
-import {env} from "cloudflare:workers";
 import {database,id,now} from "@/lib/booking";
 
 type Dict=Record<string,any>;
-export function telegramConfigured(){return typeof env.TELEGRAM_BOT_TOKEN==="string"&&env.TELEGRAM_BOT_TOKEN.trim().length>10}
+export function telegramConfigured(){return typeof process.env.TELEGRAM_BOT_TOKEN==="string"&&process.env.TELEGRAM_BOT_TOKEN.trim().length>10}
 
 function esc(value:unknown){return String(value??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")}
 
@@ -19,7 +18,7 @@ export async function notifyPartner(organizationId:string,appointmentId:string|n
   text=`<b>${title}</b>\n\n<b>Партнёр:</b> ${esc(organization.name)}\n<b>Клиент:</b> ${esc(appointment.customer_name)}\n<b>Телефон:</b> ${esc(appointment.customer_phone)}\n<b>Услуга:</b> ${esc(appointment.service_name)}\n<b>Мастер:</b> ${esc(appointment.staff_name)}\n<b>Дата:</b> ${esc(appointment.appointment_date)} в ${esc(appointment.appointment_time)}\n<b>Стоимость:</b> ${esc(appointment.price)} ₽\n<b>Источник:</b> ${esc(appointment.source==="bloom-club"?"Bloom Club":"Прямая запись")}`;
  }
  try{
-  const response=await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({chat_id:organization.telegram_chat_id,text,parse_mode:"HTML",disable_web_page_preview:true}),signal:AbortSignal.timeout(8000)});
+  const response=await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({chat_id:organization.telegram_chat_id,text,parse_mode:"HTML",disable_web_page_preview:true}),signal:AbortSignal.timeout(8000)});
   const result=await response.json() as Dict;if(!response.ok||!result.ok)return log("failed",String(result.description??"Telegram отклонил сообщение"));
   return log("sent","Уведомление отправлено");
  }catch(error){return log("failed",error instanceof Error?error.message:"Не удалось отправить уведомление")}

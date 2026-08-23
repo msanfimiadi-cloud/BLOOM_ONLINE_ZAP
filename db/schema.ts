@@ -42,7 +42,7 @@ export const appointments = sqliteTable("appointments", {
 export const accountAccess = sqliteTable("account_access", {
  id:text("id").primaryKey(), email:text("email").notNull().unique(), displayName:text("display_name").notNull().default(""),
  role:text("role").notNull().default("partner"), organizationId:text("organization_id").references(()=>organizations.id),
- active:integer("active").notNull().default(1), createdAt:text("created_at").notNull(),
+ passwordHash:text("password_hash").notNull().default(""), active:integer("active").notNull().default(1), createdAt:text("created_at").notNull(),
 });
 
 export const notificationEvents = sqliteTable("notification_events", {

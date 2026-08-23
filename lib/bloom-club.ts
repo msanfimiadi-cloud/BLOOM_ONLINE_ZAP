@@ -1,5 +1,3 @@
-import { env } from "cloudflare:workers";
-
 export type BloomClubMember = {
   memberId: number;
   partnerId: number;
@@ -19,10 +17,10 @@ export class BloomClubVerificationError extends Error {
 
 export function bloomClubConfigured() {
   return (
-    typeof env.BLOOM_CLUB_API_URL === "string" &&
-    /^https:\/\//i.test(env.BLOOM_CLUB_API_URL.trim()) &&
-    typeof env.BLOOM_ONLINE_API_TOKEN === "string" &&
-    env.BLOOM_ONLINE_API_TOKEN.trim().length >= 32
+    typeof process.env.BLOOM_CLUB_API_URL === "string" &&
+    /^https:\/\//i.test(process.env.BLOOM_CLUB_API_URL.trim()) &&
+    typeof process.env.BLOOM_ONLINE_API_TOKEN === "string" &&
+    process.env.BLOOM_ONLINE_API_TOKEN.trim().length >= 32
   );
 }
 
@@ -34,14 +32,14 @@ export async function verifyBloomClubMember(token: string, expectedSlug?: string
     throw new BloomClubVerificationError("Подтверждение Bloom Club недействительно.", 401);
   }
 
-  const endpoint = `${String(env.BLOOM_CLUB_API_URL).replace(/\/+$/, "")}/booking/verify`;
+  const endpoint = `${String(process.env.BLOOM_CLUB_API_URL).replace(/\/+$/, "")}/booking/verify`;
   let response: Response;
   try {
     response = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${env.BLOOM_ONLINE_API_TOKEN}`,
+        Authorization: `Bearer ${process.env.BLOOM_ONLINE_API_TOKEN}`,
       },
       body: JSON.stringify({ token }),
       signal: AbortSignal.timeout(8000),
@@ -96,12 +94,12 @@ export async function notifyBloomClub(event: BloomClubBookingEvent): Promise<boo
 
   try {
     const response = await fetch(
-      `${String(env.BLOOM_CLUB_API_URL).replace(/\/+$/, "")}/booking/events`,
+      `${String(process.env.BLOOM_CLUB_API_URL).replace(/\/+$/, "")}/booking/events`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${env.BLOOM_ONLINE_API_TOKEN}`,
+          Authorization: `Bearer ${process.env.BLOOM_ONLINE_API_TOKEN}`,
         },
         body: JSON.stringify({
           event_type: event.eventType,

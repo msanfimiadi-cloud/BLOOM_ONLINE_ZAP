@@ -6,40 +6,34 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "vinext build",
-    "start": "vinext start",
-    "deploy": "vinext deploy",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
     "test": "node --test tests/booking.test.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
-    "db:migrate:local": "wrangler d1 migrations apply bloom-online-db --local",
-    "db:migrate:remote": "wrangler d1 migrations apply bloom-online-db --remote"
+    "db:migrate": "node scripts/migrate.mjs",
+    "db:backup": "node scripts/backup.mjs"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",
+    "better-sqlite3": "12.2.0",
     "next": "16.2.6",
     "react": "19.2.6",
     "react-dom": "19.2.6"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "1.37.1",
     "@tailwindcss/postcss": "4.2.1",
     "@types/node": "22.19.19",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
-    "@vitejs/plugin-react": "6.0.2",
-    "@vitejs/plugin-rsc": "0.5.26",
+    "@types/better-sqlite3": "7.6.13",
     "drizzle-kit": "0.31.10",
     "eslint": "9.39.4",
     "eslint-config-next": "16.2.6",
-    "react-server-dom-webpack": "19.2.6",
     "tailwindcss": "4.2.1",
-    "typescript": "5.9.3",
-    "vinext": "0.0.50",
-    "vite": "8.0.13",
-    "wrangler": "4.92.0"
+    "typescript": "5.9.3"
   },
   "type": "module",
   "displayName": "Bloom Online \u2014 \u0437\u0430\u043f\u0438\u0441\u044c \u043a \u0441\u043f\u0435\u0446\u0438\u0430\u043b\u0438\u0441\u0442\u0430\u043c"

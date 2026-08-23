@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.PUBLIC_URL || "http://localhost:3000"),
   title: "Bloom Online — запись к специалистам",
   description: "Онлайн-запись к проверенным специалистам красоты, массажа и заботы о себе от Bloom Club.",
   openGraph: { title: "Bloom Online — запись к специалистам", description: "Выбирайте мастера, услугу и удобное время онлайн.", type: "website", locale: "ru_RU", images: [{ url: "/bloom-online-icon.png", width: 1254, height: 1254, alt: "Bloom Online" }] },

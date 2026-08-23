@@ -1,17 +1,44 @@
-import { env } from "cloudflare:workers";
+import Database from "better-sqlite3";
+import { mkdirSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 
 type Prepared = {bind(...values: unknown[]): Prepared; run(): Promise<{meta?:{changes?:number}}>; first<T = unknown>(): Promise<T | null>; all<T = unknown>(): Promise<{results: T[]}>};
 type Binding = {prepare(query: string): Prepared; batch(statements: unknown[]): Promise<unknown[]>};
 
+class SqlitePrepared implements Prepared {
+  private values: unknown[] = [];
+  constructor(private readonly statement: Database.Statement) {}
+  bind(...values: unknown[]) { this.values = values; return this; }
+  async run() { const result = this.statement.run(...this.values); return {meta:{changes:result.changes}}; }
+  async first<T = unknown>() { return (this.statement.get(...this.values) as T | undefined) ?? null; }
+  async all<T = unknown>() { return {results:this.statement.all(...this.values) as T[]}; }
+  execute() { return this.statement.reader ? this.statement.all(...this.values) : this.statement.run(...this.values); }
+}
+
+let instance: Binding | undefined;
+
 export function database(): Binding {
-  if (!env.DB) throw new Error("База данных сервиса пока недоступна.");
-  return env.DB as unknown as Binding;
+  if (instance) return instance;
+  const file = resolve(/* turbopackIgnore: true */ process.env.DATABASE_PATH || "./data/bloom-online.sqlite");
+  mkdirSync(dirname(file), {recursive:true});
+  const sqlite = new Database(file);
+  sqlite.pragma("journal_mode = WAL");
+  sqlite.pragma("foreign_keys = ON");
+  sqlite.pragma("busy_timeout = 5000");
+  instance = {
+    prepare(query:string) { return new SqlitePrepared(sqlite.prepare(query)); },
+    async batch(statements:unknown[]) {
+      return sqlite.transaction((items:unknown[]) => items.map(item => (item as SqlitePrepared).execute()))(statements);
+    },
+  };
+  return instance;
 }
 
 export const id = (prefix: string) => `${prefix}_${crypto.randomUUID().replaceAll("-", "").slice(0, 16)}`;
 export const now = () => new Date().toISOString();
 
 export async function seedDemoData() {
+  if (process.env.NODE_ENV === "production" && process.env.SEED_DEMO_DATA !== "true") return;
   const db = database();
   const row = await db.prepare("SELECT COUNT(*) AS count FROM organizations").first<{count:number}>();
   if (row?.count) return;

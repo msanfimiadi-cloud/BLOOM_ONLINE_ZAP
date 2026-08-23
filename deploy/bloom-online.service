@@ -1,0 +1,22 @@
+[Unit]
+Description=Bloom Online booking service
+After=network.target
+
+[Service]
+Type=simple
+User=bloom-online
+Group=bloom-online
+WorkingDirectory=/opt/bloom-online
+EnvironmentFile=/etc/bloom-online.env
+Environment=NODE_ENV=production
+Environment=PORT=3101
+ExecStart=/usr/bin/npm run start
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/opt/bloom-online/data /opt/bloom-online/backups
+
+[Install]
+WantedBy=multi-user.target
