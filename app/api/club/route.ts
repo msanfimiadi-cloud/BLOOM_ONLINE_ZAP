@@ -15,11 +15,15 @@ export async function POST(request: Request) {
   try {
     const payload = (await request.json()) as Record<string, unknown>;
     const token = typeof payload.token === "string" ? payload.token : "";
+    const slug = typeof payload.slug === "string" ? payload.slug.trim() : "";
     if (!token || token.length > 4096) {
       return Response.json({ error: "Подтверждение Bloom Club недействительно." }, { status: 400 });
     }
+    if (!/^[a-z0-9][a-z0-9-]{0,100}$/.test(slug)) {
+      return Response.json({ error: "Не указан партнёр Bloom Online." }, { status: 400 });
+    }
 
-    const member = await verifyBloomClubMember(token);
+    const member = await verifyBloomClubMember(token, slug);
     return Response.json({
       active: member.active,
       name: member.name,

@@ -2,6 +2,8 @@ import { env } from "cloudflare:workers";
 
 export type BloomClubMember = {
   memberId: number;
+  partnerId: number;
+  bookingSlug: string;
   active: boolean;
   name: string;
   phone: string;
@@ -24,7 +26,7 @@ export function bloomClubConfigured() {
   );
 }
 
-export async function verifyBloomClubMember(token: string): Promise<BloomClubMember> {
+export async function verifyBloomClubMember(token: string, expectedSlug?: string): Promise<BloomClubMember> {
   if (!bloomClubConfigured()) {
     throw new BloomClubVerificationError("Подключение Bloom Club пока не настроено.", 503);
   }
@@ -59,12 +61,63 @@ export async function verifyBloomClubMember(token: string): Promise<BloomClubMem
   }
 
   const data = (await response.json()) as Record<string, unknown>;
-  return {
+  const member = {
     memberId: Number(data.member_id ?? 0),
+    partnerId: Number(data.partner_id ?? 0),
+    bookingSlug: typeof data.booking_slug === "string" ? data.booking_slug.trim() : "",
     active: data.active === true,
     name: typeof data.name === "string" ? data.name.trim().slice(0, 100) : "",
     phone: typeof data.phone === "string" ? data.phone.trim().slice(0, 30) : "",
     subscriptionExpiresAt:
       typeof data.subscription_expires_at === "string" ? data.subscription_expires_at : null,
   };
+  if (!Number.isSafeInteger(member.memberId) || member.memberId < 1) {
+    throw new BloomClubVerificationError("Не удалось подтвердить участницу Bloom Club.", 401);
+  }
+  if (expectedSlug && member.bookingSlug !== expectedSlug) {
+    throw new BloomClubVerificationError("Подтверждение Bloom Club выдано для другого партнёра.", 403);
+  }
+  return member;
+}
+
+export type BloomClubBookingEvent = {
+  eventType: "booking_created" | "booking_cancelled" | "booking_completed" | "booking_no_show" | "booking_rescheduled";
+  bookingId: string;
+  memberId: number;
+  partnerId: number;
+  appointmentDate: string;
+  appointmentTime: string;
+  price: number;
+  discount: number;
+};
+
+export async function notifyBloomClub(event: BloomClubBookingEvent): Promise<boolean> {
+  if (!bloomClubConfigured() || event.memberId < 1 || event.partnerId < 1) return false;
+
+  try {
+    const response = await fetch(
+      `${String(env.BLOOM_CLUB_API_URL).replace(/\/+$/, "")}/booking/events`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${env.BLOOM_ONLINE_API_TOKEN}`,
+        },
+        body: JSON.stringify({
+          event_type: event.eventType,
+          booking_id: event.bookingId,
+          member_id: event.memberId,
+          partner_id: event.partnerId,
+          appointment_date: event.appointmentDate,
+          appointment_time: event.appointmentTime,
+          price: event.price,
+          discount: event.discount,
+        }),
+        signal: AbortSignal.timeout(8000),
+      },
+    );
+    return response.ok;
+  } catch {
+    return false;
+  }
 }

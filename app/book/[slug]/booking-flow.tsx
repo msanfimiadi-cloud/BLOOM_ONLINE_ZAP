@@ -20,10 +20,10 @@ export default function BookingFlow({slug}:{slug:string}){
   params.delete("club_token");
   const query=params.toString();
   window.history.replaceState(window.history.state,"",`${window.location.pathname}${query?`?${query}`:""}${window.location.hash}`);
-  fetch("/api/club",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token})})
+  fetch("/api/club",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token,slug})})
    .then(async response=>{const membership=await response.json();if(!response.ok)throw Error(membership.error);setClubVerified(Boolean(membership.active));if(membership.name)setName(String(membership.name));if(membership.phone)setPhone(String(membership.phone))})
    .catch(reason=>setError(reason instanceof Error?reason.message:"Не удалось проверить участие в Bloom Club."));
- },[]);
+ },[slug]);
  useEffect(()=>{if(!service||!member||!date)return;setBusy(true);setError("");fetch(`/api/booking?kind=slots&serviceId=${service.id}&staffId=${member.id}&date=${date}`).then(async(response)=>{const data=await response.json();if(!response.ok)throw Error(data.error);setSlots(data.slots??[])}).catch(reason=>setError(reason.message)).finally(()=>setBusy(false))},[service,member,date]);
  async function submit(){setBusy(true);setError("");try{const response=await fetch("/api/booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"book",serviceId:service?.id,staffId:member?.id,date,time,customerName:name,customerPhone:phone,source,clubToken,website})});const data=await response.json();if(!response.ok)throw Error(data.error);setResult(data);setConfirmed(true)}catch(reason){setError(reason instanceof Error?reason.message:"Не удалось создать запись")}finally{setBusy(false)}}
  if(!info)return <main className="booking-shell"><BrandLogo /><p className="muted">{error||"Подготавливаем страницу записи…"}</p></main>;

@@ -34,6 +34,7 @@ export const appointments = sqliteTable("appointments", {
   appointmentDate: text("appointment_date").notNull(), appointmentTime: text("appointment_time").notNull(),
   duration: integer("duration").notNull(), price: integer("price").notNull(), status: text("status").notNull().default("confirmed"),
   originalPrice:integer("original_price").notNull().default(0),discountAmount:integer("discount_amount").notNull().default(0),
+  clubMemberId:integer("club_member_id").notNull().default(0),clubPartnerId:integer("club_partner_id").notNull().default(0),
   publicToken:text("public_token").notNull().default(""),
   source: text("source").notNull().default("bloom"), notes: text("notes").notNull().default(""), createdAt: text("created_at").notNull(),
 }, (table) => [uniqueIndex("appointment_staff_slot_unique").on(table.staffId, table.appointmentDate, table.appointmentTime).where(sql`status != 'cancelled'`)]);
