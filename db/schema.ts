@@ -1,10 +1,10 @@
-import { integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { blob, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 import {sql} from "drizzle-orm";
 
 export const organizations = sqliteTable("organizations", {
   id: text("id").primaryKey(), slug: text("slug").notNull().unique(), name: text("name").notNull(),
   city: text("city").notNull(), address: text("address").notNull(), category: text("category").notNull(),
-  description: text("description").notNull().default(""), phone: text("phone").notNull().default(""),
+  description: text("description").notNull().default(""), phone: text("phone").notNull().default(""), imageUrl:text("image_url").notNull().default(""),
   color: text("color").notNull().default("#f6e7e2"), active: integer("active").notNull().default(1),
   telegramChatId: text("telegram_chat_id").notNull().default(""), notificationsEnabled: integer("notifications_enabled").notNull().default(0),
   bloomDiscountPercent: integer("bloom_discount_percent").notNull().default(0), timezone: text("timezone").notNull().default("Asia/Novosibirsk"),
@@ -14,7 +14,7 @@ export const organizations = sqliteTable("organizations", {
 
 export const staff = sqliteTable("staff", {
   id: text("id").primaryKey(), organizationId: text("organization_id").notNull().references(() => organizations.id),
-  name: text("name").notNull(), role: text("role").notNull(), active: integer("active").notNull().default(1),
+  name: text("name").notNull(), role: text("role").notNull(), imageUrl:text("image_url").notNull().default(""), active: integer("active").notNull().default(1),
   workStart: text("work_start").notNull().default("10:00"), workEnd: text("work_end").notNull().default("19:00"),
   workDays:text("work_days").notNull().default("1,2,3,4,5,6"),breakStart:text("break_start").notNull().default(""),
   breakEnd:text("break_end").notNull().default(""),bufferMinutes:integer("buffer_minutes").notNull().default(0),
@@ -23,7 +23,7 @@ export const staff = sqliteTable("staff", {
 
 export const services = sqliteTable("services", {
   id: text("id").primaryKey(), organizationId: text("organization_id").notNull().references(() => organizations.id),
-  name: text("name").notNull(), price: integer("price").notNull(), duration: integer("duration").notNull(),
+  name: text("name").notNull(), imageUrl:text("image_url").notNull().default(""), price: integer("price").notNull(), duration: integer("duration").notNull(),
   active: integer("active").notNull().default(1), createdAt: text("created_at").notNull(),
 });
 
@@ -76,4 +76,9 @@ export const telegramLinkTokens=sqliteTable("telegram_link_tokens",{
  id:text("id").primaryKey(),organizationId:text("organization_id").notNull().references(()=>organizations.id),
  tokenHash:text("token_hash").notNull().unique(),createdAt:text("created_at").notNull(),
  expiresAt:text("expires_at").notNull(),usedAt:text("used_at"),
+});
+
+export const uploadedMedia=sqliteTable("uploaded_media",{
+ id:text("id").primaryKey(),organizationId:text("organization_id").references(()=>organizations.id),
+ mimeType:text("mime_type").notNull(),content:blob("content",{mode:"buffer"}).notNull(),createdAt:text("created_at").notNull(),
 });
