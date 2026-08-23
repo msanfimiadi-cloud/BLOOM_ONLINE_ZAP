@@ -71,3 +71,9 @@ export const customerNotes=sqliteTable("customer_notes",{
 export const bookingAttempts=sqliteTable("booking_attempts",{
  id:text("id").primaryKey(),fingerprint:text("fingerprint").notNull(),createdAt:text("created_at").notNull(),
 });
+
+export const telegramLinkTokens=sqliteTable("telegram_link_tokens",{
+ id:text("id").primaryKey(),organizationId:text("organization_id").notNull().references(()=>organizations.id),
+ tokenHash:text("token_hash").notNull().unique(),createdAt:text("created_at").notNull(),
+ expiresAt:text("expires_at").notNull(),usedAt:text("used_at"),
+});
