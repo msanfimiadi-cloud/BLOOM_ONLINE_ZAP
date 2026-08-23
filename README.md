@@ -34,7 +34,7 @@
 
 ## Технологии
 
-React 19, Next-compatible Vinext, TypeScript, Cloudflare Workers, Cloudflare D1 и Drizzle ORM.
+React 19, Next-compatible Vinext, TypeScript, Cloudflare Workers, Cloudflare D1 и Drizzle ORM. Репозиторий не привязан к OpenAI Sites или другому чужому хостингу.
 
 ## Запуск
 
@@ -59,7 +59,15 @@ npm run build
 npm run db:generate
 ```
 
-Настройка хранилища находится в `.openai/hosting.json`, схема — в `db/schema.ts`, миграции — в `drizzle/`.
+Схема базы находится в `db/schema.ts`, миграции — в `drizzle/`, независимая конфигурация Cloudflare — в `wrangler.jsonc`.
+
+## Развёртывание на своём Cloudflare
+
+1. Выполните `npx wrangler login` и создайте D1-базу: `npx wrangler d1 create bloom-online-db`.
+2. Вставьте выданный `database_id` вместо временного нулевого значения в `wrangler.jsonc`.
+3. Примените миграции: `npm run db:migrate:remote`.
+4. Задайте секреты через `npx wrangler secret put`: `OWNER_EMAIL`, `TELEGRAM_BOT_TOKEN`, `BLOOM_CLUB_API_URL` и `BLOOM_ONLINE_API_TOKEN`.
+5. Опубликуйте проект командой `npm run deploy`, затем подключите собственный домен в Cloudflare Workers.
 
 ## Telegram-уведомления
 

@@ -6,14 +6,16 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "install:ci": "bash scripts/install-ci.sh",
-    "dev": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vite",
-    "build": "bash scripts/build-verified.sh",
-    "start": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext start",
+    "dev": "vite",
+    "build": "vinext build",
+    "start": "vinext start",
+    "deploy": "vinext deploy",
     "test": "node --test tests/booking.test.mjs",
     "typecheck": "tsc --noEmit",
-    "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next",
-    "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate"
+    "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:local": "wrangler d1 migrations apply bloom-online-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply bloom-online-db --remote"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",
