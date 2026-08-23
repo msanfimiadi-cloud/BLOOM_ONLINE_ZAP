@@ -23,9 +23,9 @@ async function createLink(request:Request){
  const access=await currentAccess();if(!access)return fail("Доступ в кабинет не предоставлен.",403);
  if(!telegramConfigured())return fail("Сначала подключите токен существующего Telegram-бота.",503);
  const payload=await request.json() as Dict,organizationId=String(payload.organizationId??"");
- if(!organizationId||!canAccessOrganization(access,organizationId))return fail("У вас нет доступа к этому партнёру.",403);
+ if(!organizationId||!canAccessOrganization(access,organizationId))return fail("У вас нет доступа к этому салону.",403);
  const organization=await database().prepare("SELECT id,name FROM organizations WHERE id=? AND active=1").bind(organizationId).first<{id:string;name:string}>();
- if(!organization)return fail("Партнёр не найден.",404);
+ if(!organization)return fail("Салон не найден.",404);
  const username=await botUsername(),token=randomBytes(24).toString("hex"),created=now(),expires=new Date(Date.now()+15*60_000).toISOString();
  await database().prepare("INSERT INTO telegram_link_tokens (id,organization_id,token_hash,created_at,expires_at) VALUES (?,?,?,?,?)").bind(id("tgl"),organizationId,await sha256(token),created,expires).run();
  return Response.json({success:true,url:`https://t.me/${username}?start=bloomonline_${token}`,expiresAt:expires});

@@ -3,10 +3,10 @@ import BrandLogo from "@/app/components/brand-logo";
 import PartnerCatalog from "./components/partner-catalog";
 
 const services = [
-  { name: "Маникюр и педикюр", count: "12 специалистов", icon: "✦", color: "#f6e7e2" },
-  { name: "Массаж и SPA", count: "8 специалистов", icon: "◌", color: "#e7eee5" },
-  { name: "Волосы и укладки", count: "6 специалистов", icon: "〰", color: "#f3ebdb" },
-  { name: "Косметология", count: "5 специалистов", icon: "✧", color: "#e9e5f0" },
+  { name: "Маникюр и педикюр", count: "Салоны и частные мастера", icon: "✦", color: "#f6e7e2" },
+  { name: "Массаж и SPA", count: "Забота о теле", icon: "◌", color: "#e7eee5" },
+  { name: "Волосы и укладки", count: "Студии и стилисты", icon: "〰", color: "#f3ebdb" },
+  { name: "Косметология", count: "Уход и красота", icon: "✧", color: "#e9e5f0" },
 ];
 
 export default function Home() {
@@ -14,7 +14,7 @@ export default function Home() {
     <main className="site-shell">
       <header className="topbar">
         <BrandLogo />
-        <nav className="topnav"><a href="#catalog">Услуги</a><a href="#partners">Партнёры</a><Link href="/dashboard" className="button button-dark">Кабинет партнёра</Link></nav>
+        <nav className="topnav"><a href="#catalog">Услуги</a><a href="#salons">Салоны и мастера</a><Link href="/dashboard" className="button button-dark">Личный кабинет</Link></nav>
       </header>
       <section className="intro">
         <div className="eyebrow">BLOOM CLUB · ОНЛАЙН-ЗАПИСЬ</div>
@@ -27,8 +27,8 @@ export default function Home() {
         <div className="section-heading"><div><div className="eyebrow">С ЧЕГО НАЧНЁМ?</div><h2>Выберите направление</h2></div><span className="muted">Всё для вашего настроения</span></div>
         <div className="category-grid">{services.map((item) => <article className="category-card" style={{backgroundColor: item.color}} key={item.name}><span className="category-icon">{item.icon}</span><h3>{item.name}</h3><span>{item.count}</span><span className="category-arrow">↗</span></article>)}</div>
       </section>
-      <section className="section partner-section" id="partners"><div className="section-heading"><div><div className="eyebrow">ТЩАТЕЛЬНО ОТОБРАНЫ</div><h2>Наши партнёры</h2></div><span className="muted">Новосибирск · Москва · Екатеринбург</span></div><PartnerCatalog/></section>
-      <footer className="footer"><BrandLogo /><span>Ваше время. Ваши правила.</span><Link href="/dashboard">Для партнёров →</Link></footer>
+      <section className="section partner-section" id="salons"><div className="section-heading"><div><div className="eyebrow">ОНЛАЙН-ЗАПИСЬ БЕЗ ЗВОНКОВ</div><h2>Салоны и мастера</h2></div><span className="muted">Выберите подходящее место и время</span></div><PartnerCatalog/></section>
+      <footer className="footer"><BrandLogo /><span>Ваше время. Ваши правила.</span><Link href="/dashboard">Для салонов и мастеров →</Link></footer>
     </main>
   );
 }
