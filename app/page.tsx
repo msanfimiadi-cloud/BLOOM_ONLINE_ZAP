@@ -1,12 +1,13 @@
 import Link from "next/link";
+import Image from "next/image";
 import BrandLogo from "@/app/components/brand-logo";
 import PartnerCatalog from "./components/partner-catalog";
 
 const services = [
-  { name: "Маникюр и педикюр", description: "Красота в каждой детали", category: "Ногтевой сервис", shape: "petal" },
-  { name: "Массаж и SPA", description: "Время восстановить силы", category: "Тело и отдых", shape: "wave" },
-  { name: "Волосы и укладки", description: "Настроение, которое видно", category: "Волосы", shape: "ribbon" },
-  { name: "Косметология", description: "Уход, который подходит вам", category: "Лицо и кожа", shape: "orbit" },
+  { name: "Маникюр и педикюр", description: "Красота в каждой детали", category: "Ногтевой сервис", image: "/services/manicure.webp" },
+  { name: "Массаж и SPA", description: "Время восстановить силы", category: "Тело и отдых", image: "/services/massage.webp" },
+  { name: "Волосы и укладки", description: "Настроение, которое видно", category: "Волосы", image: "/services/hair.webp" },
+  { name: "Косметология", description: "Уход, который подходит вам", category: "Лицо и кожа", image: "/services/cosmetology.webp" },
 ];
 
 const bookingSteps = [
@@ -37,36 +38,28 @@ export default function Home() {
 
       <section className="premium-hero">
         <div className="hero-copy">
-          <h1>Красота<br />начинается<br /><span>с момента.</span></h1>
-          <p>Салоны, мастера и всё, что помогает почувствовать себя собой. Выбирайте удобное время и записывайтесь онлайн.</p>
-          <div className="hero-actions"><a href="#salons" className="premium-primary-action">Найти своего мастера <ArrowIcon /></a><a href="#catalog" className="premium-secondary-action">Все направления</a></div>
-          <div className="hero-signature"><span>Ваше время</span><span>Ваши правила</span></div>
+          <h1>Ваше время<br /><span>для красоты.</span></h1>
+          <p>Салоны красоты и любимые мастера — в одном месте. Выбирайте услугу, удобное время и записывайтесь онлайн.</p>
+          <div className="hero-actions"><a href="#salons" className="premium-primary-action">Выбрать салон <ArrowIcon /></a><a href="#catalog" className="premium-secondary-action">Посмотреть услуги</a></div>
+          <div className="hero-benefits"><span><CheckIcon /> Без звонков</span><span><CheckIcon /> В удобное время</span></div>
         </div>
-        <div className="hero-stage" aria-label="Онлайн-запись в салон">
-          <div className="stage-bloom stage-bloom-first" aria-hidden="true" /><div className="stage-bloom stage-bloom-second" aria-hidden="true" /><div className="stage-bloom stage-bloom-third" aria-hidden="true" />
-          <div className="booking-preview">
-            <div className="booking-preview-heading"><span>Ваша запись</span><span>Bloom Online</span></div>
-            <div className="booking-preview-service"><span>Выберите, что хочется</span><strong>Маникюр<br />и уход за собой</strong></div>
-            <div className="booking-preview-detail"><span>Специалист</span><strong>Вы выбираете сами</strong></div>
-            <div className="booking-preview-detail"><span>Время</span><strong>Когда удобно вам</strong></div>
-            <div className="booking-preview-button"><CheckIcon /><span>Запись без звонка</span></div>
-          </div>
-          <span className="stage-caption">Найдите момент для себя</span>
+        <div className="hero-stage" aria-label="Bloom Online — часть экосистемы Bloom Club">
+          <div className="hero-brand-mark"><Image src="/bloom-online-icon.png" alt="" width={196} height={196} priority /></div>
+          <strong>Забота о себе<br />начинается здесь</strong>
+          <a href="#salons" className="hero-stage-link">Найти своего мастера <ArrowIcon /></a>
         </div>
       </section>
-
-      <section className="premium-promise" aria-label="Возможности сервиса"><span>Выбирайте своего мастера</span><span>Находите удобное время</span><span>Записывайтесь без звонка</span></section>
 
       <section className="premium-section directions-section" id="catalog">
-        <div className="premium-section-heading"><h2>Всё, что делает<br /><span>ваш день лучше.</span></h2><p>Выберите то, чего хочется именно сейчас.</p></div>
-        <div className="premium-directions">{services.map((service) => <a className={`direction-item direction-${service.shape}`} href="#salons" key={service.name}><span className="direction-meta">{service.category}</span><div className="direction-form" aria-hidden="true" /><div className="direction-content"><h3>{service.name}</h3><span>{service.description}</span></div><span className="direction-action" aria-label={`Найти ${service.name.toLowerCase()}`}><ArrowIcon /></span></a>)}</div>
+        <div className="premium-section-heading"><h2>Услуги <span>для вас</span></h2><p>Выберите то, чего хочется именно сейчас.</p></div>
+        <div className="premium-directions">{services.map((service) => <a className="direction-item direction-photo-card" href="#salons" key={service.name}><Image className="direction-photo" src={service.image} alt={service.name} fill sizes="(max-width: 740px) 100vw, (max-width: 1050px) 50vw, 25vw" /><span className="direction-meta">{service.category}</span><div className="direction-content"><h3>{service.name}</h3><span>{service.description}</span></div><span className="direction-action" aria-label={`Найти ${service.name.toLowerCase()}`}><ArrowIcon /></span></a>)}</div>
       </section>
 
-      <section className="premium-section salon-discovery" id="salons"><div className="premium-section-heading"><h2>Места, куда<br /><span>хочется вернуться.</span></h2><p>Салоны и мастера, к которым можно записаться прямо сейчас.</p></div><PartnerCatalog /></section>
+      <section className="premium-section salon-discovery" id="salons"><div className="premium-section-heading"><h2>Салоны <span>и мастера</span></h2><p>Находите своего специалиста и записывайтесь онлайн.</p></div><PartnerCatalog /></section>
 
-      <section className="premium-explainer"><div className="explainer-heading"><h2>Несколько шагов.<br /><span>И время уже ваше.</span></h2></div><div className="explainer-steps">{bookingSteps.map((step) => <article className="explainer-step" key={step.title}><span className="step-mark" aria-hidden="true" /><h3>{step.title}</h3><p>{step.description}</p></article>)}</div><a href="#salons" className="explainer-link">Выбрать салон <ArrowIcon /></a></section>
+      <section className="premium-explainer"><div className="explainer-heading"><h2>Записаться —<br /><span>это просто</span></h2></div><div className="explainer-steps">{bookingSteps.map((step) => <article className="explainer-step" key={step.title}><span className="step-mark" aria-hidden="true" /><h3>{step.title}</h3><p>{step.description}</p></article>)}</div><a href="#salons" className="explainer-link">Выбрать салон <ArrowIcon /></a></section>
 
-      <section className="premium-business"><div><h2>Ваш салон<br /><span>заслуживает большего.</span></h2><p>Управляйте сотрудниками, услугами и расписанием. Принимайте записи там, где клиентам удобно.</p></div><Link href="/dashboard" className="business-action">Открыть личный кабинет <ArrowIcon /></Link></section>
+      <section className="premium-business"><div><h2>У вас салон красоты<br /><span>или собственная практика?</span></h2><p>Управляйте сотрудниками, услугами и расписанием. Принимайте записи там, где клиентам удобно.</p></div><Link href="/dashboard" className="business-action">Открыть личный кабинет <ArrowIcon /></Link></section>
 
       <footer className="footer premium-footer"><BrandLogo /><span>Ваше время. Ваши правила.</span><Link href="/dashboard">Для салонов и мастеров <ArrowIcon /></Link></footer>
     </main>
