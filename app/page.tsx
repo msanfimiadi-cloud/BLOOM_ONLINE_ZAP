@@ -61,7 +61,7 @@ export default function Home() {
 
       <section className="premium-business"><div><h2>У вас салон красоты<br /><span>или собственная практика?</span></h2><p>Управляйте сотрудниками, услугами и расписанием. Принимайте записи там, где клиентам удобно.</p></div><Link href="/dashboard" className="business-action">Открыть личный кабинет <ArrowIcon /></Link></section>
 
-      <footer className="footer premium-footer"><BrandLogo /><span>Ваше время. Ваши правила.</span><Link href="/dashboard">Для салонов и мастеров <ArrowIcon /></Link></footer>
+      <footer className="footer premium-footer"><BrandLogo /><div className="footer-legal-links"><Link href="/offer">Публичная оферта</Link><Link href="/terms">Пользовательское соглашение</Link><Link href="/privacy">Политика конфиденциальности</Link><Link href="/personal-data-consent">Обработка персональных данных</Link><Link href="/cookies">Cookies</Link></div><Link href="/dashboard">Для салонов и мастеров <ArrowIcon /></Link></footer>
     </main>
   );
 }

@@ -88,3 +88,8 @@ export const appointmentTelegramLinks=sqliteTable("appointment_telegram_links",{
  id:text("id").primaryKey(),appointmentId:text("appointment_id").notNull().references(()=>appointments.id),tokenHash:text("token_hash").notNull().unique(),
  createdAt:text("created_at").notNull(),expiresAt:text("expires_at").notNull(),usedAt:text("used_at"),
 });
+
+export const legalConsentEvents=sqliteTable("legal_consent_events",{
+ id:text("id").primaryKey(),organizationId:text("organization_id").references(()=>organizations.id),subjectIdentifier:text("subject_identifier").notNull(),
+ documentType:text("document_type").notNull(),documentVersion:text("document_version").notNull(),context:text("context").notNull(),createdAt:text("created_at").notNull(),
+});
