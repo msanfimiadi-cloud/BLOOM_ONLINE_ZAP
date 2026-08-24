@@ -5,7 +5,7 @@ export const organizations = sqliteTable("organizations", {
   id: text("id").primaryKey(), slug: text("slug").notNull().unique(), name: text("name").notNull(),
   city: text("city").notNull(), address: text("address").notNull(), category: text("category").notNull(),
   description: text("description").notNull().default(""), phone: text("phone").notNull().default(""), imageUrl:text("image_url").notNull().default(""),
-  color: text("color").notNull().default("#f6e7e2"), active: integer("active").notNull().default(1),
+  color: text("color").notNull().default("#f6e7e2"), active: integer("active").notNull().default(1), published:integer("published").notNull().default(1),
   telegramChatId: text("telegram_chat_id").notNull().default(""), notificationsEnabled: integer("notifications_enabled").notNull().default(0),
   bloomDiscountPercent: integer("bloom_discount_percent").notNull().default(0), timezone: text("timezone").notNull().default("Asia/Novosibirsk"),
   bookingLeadMinutes:integer("booking_lead_minutes").notNull().default(60),slotStepMinutes:integer("slot_step_minutes").notNull().default(30),
