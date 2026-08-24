@@ -17,10 +17,17 @@ export default function Home() {
         <nav className="topnav"><a href="#catalog">Услуги</a><a href="#salons">Салоны и мастера</a><Link href="/dashboard" className="button button-dark">Личный кабинет</Link></nav>
       </header>
       <section className="intro">
-        <div className="eyebrow">BLOOM CLUB · ОНЛАЙН-ЗАПИСЬ</div>
-        <h1>Время<br/><em>для себя.</em></h1>
-        <p>Записывайтесь к проверенным мастерам красоты и заботы о себе — в удобное время и без звонков.</p>
-        <a href="#catalog" className="button button-dark button-large">Выбрать услугу <span>↗</span></a>
+        <div className="intro-content">
+          <div className="eyebrow">BLOOM CLUB · ОНЛАЙН-ЗАПИСЬ</div>
+          <h1>Время<br/><em>для себя.</em></h1>
+          <p>Записывайтесь к проверенным мастерам красоты и заботы о себе — в удобное время и без звонков.</p>
+          <div className="intro-actions"><a href="#catalog" className="button button-dark button-large">Выбрать услугу <span>↗</span></a><a href="#salons" className="intro-secondary">Найти салон <span>→</span></a></div>
+        </div>
+        <div className="intro-visual" aria-hidden="true">
+          <div className="intro-orbit intro-orbit-outer"/><div className="intro-orbit intro-orbit-inner"/>
+          <div className="intro-blossom"><span>✳</span></div>
+          <div className="intro-note"><span className="intro-note-icon">✦</span><div><strong>Ваш момент заботы</strong><span>Мастер · Услуга · Удобное время</span></div></div>
+        </div>
         <div className="intro-aside"><span>01 / 04</span><span>Красота начинается<br/>с удобной записи</span></div>
       </section>
       <section className="section" id="catalog">
