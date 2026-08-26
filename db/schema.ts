@@ -7,6 +7,7 @@ export const organizations = sqliteTable("organizations", {
   description: text("description").notNull().default(""), phone: text("phone").notNull().default(""), imageUrl:text("image_url").notNull().default(""),
   color: text("color").notNull().default("#f6e7e2"), active: integer("active").notNull().default(1), published:integer("published").notNull().default(1),
   telegramChatId: text("telegram_chat_id").notNull().default(""), notificationsEnabled: integer("notifications_enabled").notNull().default(0),
+  vkPeerId:text("vk_peer_id").notNull().default(""),vkNotificationsEnabled:integer("vk_notifications_enabled").notNull().default(0),
   bloomDiscountPercent: integer("bloom_discount_percent").notNull().default(0), timezone: text("timezone").notNull().default("Asia/Novosibirsk"),
   bookingLeadMinutes:integer("booking_lead_minutes").notNull().default(60),slotStepMinutes:integer("slot_step_minutes").notNull().default(30),
   createdAt: text("created_at").notNull(),
@@ -74,6 +75,12 @@ export const bookingAttempts=sqliteTable("booking_attempts",{
 });
 
 export const telegramLinkTokens=sqliteTable("telegram_link_tokens",{
+ id:text("id").primaryKey(),organizationId:text("organization_id").notNull().references(()=>organizations.id),
+ tokenHash:text("token_hash").notNull().unique(),createdAt:text("created_at").notNull(),
+ expiresAt:text("expires_at").notNull(),usedAt:text("used_at"),
+});
+
+export const vkLinkTokens=sqliteTable("vk_link_tokens",{
  id:text("id").primaryKey(),organizationId:text("organization_id").notNull().references(()=>organizations.id),
  tokenHash:text("token_hash").notNull().unique(),createdAt:text("created_at").notNull(),
  expiresAt:text("expires_at").notNull(),usedAt:text("used_at"),
